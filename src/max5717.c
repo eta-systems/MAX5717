@@ -24,12 +24,14 @@
   * @param  *hdac pointer to DAC handle
   * @param  colt floating point value of analog output voltage
   */
-uint32_t MAX5719_VoltageToCode(MAX5717_t *hdac, float volt)
+uint32_t MAX5717_VoltageToCode(MAX5717_t *hdac, float volt)
 {
+	volt = volt + (hdac->vref / 2.0f); // only for symmetrical output
 	float fltCode = 0.0f;
 	fltCode = volt * ((float)MAX571X_CODE_MAX) / hdac->vref;
 	if(fltCode < 0.0f) fltCode = 0.0f;
 	uint32_t code = (uint32_t)fltCode;
+	// uint32_t code = (uint32_t)fltCode + (MAX571X_CODE_MAX/2);
 	if(code > MAX571X_CODE_MAX) code = MAX571X_CODE_MAX;
 	return code;
 
@@ -62,7 +64,7 @@ uint8_t MAX5717_Init(MAX5717_t *hdac, SPI_HandleTypeDef *hspi, float vref)
 	// Datasheet 1. 16-Bit Serial Interface Timing Diagram
 	HAL_GPIO_WritePin(hdac->csPort, hdac->csPin, GPIO_PIN_SET);        // !CS --> inverting
 	HAL_GPIO_WritePin(hdac->latchPort, hdac->latchPin, GPIO_PIN_SET);  // !LATCH --> inverting
-	
+	return 0;
 }
 
 
@@ -74,7 +76,19 @@ uint8_t MAX5717_Init(MAX5717_t *hdac, SPI_HandleTypeDef *hspi, float vref)
   */
 uint8_t MAX5717_SetVoltage(MAX5717_t *hdac, float volt)
 {
-	uint32_t code = MAX5719_VoltageToCode(hdac, volt);
+	uint32_t code = MAX5717_VoltageToCode(hdac, volt);
+	MAX5717_SendCode(hdac, code);
+	return 0;
+}
+
+/**
+  * @brief  directly sends a binary code to the DAC
+  * @param  *hdac pointer to DAC handle
+  * @param  code the outputvalaue represented as code
+  * @see    Datasheet 1. 16-Bit Serial Interface Timing Diagram
+  */
+uint8_t MAX5717_SendCode(MAX5717_t *hdac, uint32_t code)
+{
 	uint8_t payload[MAX571X_DATA_LENGTH];
 
 #ifdef USE_MAX5719
@@ -87,25 +101,24 @@ uint8_t MAX5717_SetVoltage(MAX5717_t *hdac, float volt)
 	payload[0] = (uint8_t)((data2 >>  8) & 0xFF);
 	payload[1] = (uint8_t)((data2 >>  0) & 0xFF);
 #endif
-
+	
+	/** @note
+	YES! CS must be toggled
+	LDAC allows the DACD latch to update asynchronously, by pulling LDAC 
+  low after CS goes high.  Hold LDAC high during the data loading sequence.
+	*/
 	HAL_GPIO_WritePin(hdac->csPort, hdac->csPin, GPIO_PIN_RESET); // chip select
-
-	HAL_SPI_Transmit(hdac->hspix, payload, MAX571X_DATA_LENGTH, 10);  // 2 or 3 bytes
-
+	HAL_SPI_Transmit(hdac->hspix, payload, MAX571X_DATA_LENGTH, 10);  // 2 or 3 bytes__nop();
 	HAL_GPIO_WritePin(hdac->csPort, hdac->csPin, GPIO_PIN_SET); // chip un-select
 
-	/** @note here needs to be a delay t_LDPW of at least 20ns 
-	          here: t_LDPW > 20ns
-	          f_cpu = 216 MHz --> t_clk = 4.6ns --> use 5 NOP commands to reach 20ns 
+	/** @note 
+	here needs to be a delay t_LDPW of at least 20ns 
+	here: t_LDPW > 20ns
+	f_cpu = 216 MHz --> t_clk = 4.6ns --> use 5 NOP commands to reach 20ns 
 	*/
 
 	HAL_GPIO_WritePin(hdac->latchPort, hdac->latchPin, GPIO_PIN_RESET); // latch low
-	__nop();
-	__nop();
-	__nop();
-	__nop();
-	__nop();
-	__nop();
+	for(uint32_t i=0; i<128; i++);  // Delay
 	HAL_GPIO_WritePin(hdac->latchPort, hdac->latchPin, GPIO_PIN_SET); // latch high
 	
 	return 0;

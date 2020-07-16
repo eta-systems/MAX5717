@@ -41,12 +41,12 @@ extern "C" {
 // default reference voltage
 #define MAX5717_VREF (4.096f)
 
-#if defined MAX5717
+#if defined USE_MAX5717
 #define MAX571X_DATA_LENGTH 2
 #define MAX571X_CODE_MAX (0xFFFF)
 #endif
 
-#if defined MAX5719
+#if defined USE_MAX5719
 #define MAX571X_DATA_LENGTH 3
 #define MAX571X_CODE_MAX (0x0FFFFF)
 #endif
@@ -63,6 +63,7 @@ typedef struct {
 uint32_t MAX5717_VoltageToCode (MAX5717_t *hdac, float volt);
 uint8_t  MAX5717_SetVoltage    (MAX5717_t *hdac, float volt);
 uint8_t  MAX5717_Init          (MAX5717_t *hdac, SPI_HandleTypeDef *hspi, float vref);
+uint8_t  MAX5717_SendCode      (MAX5717_t *hdac, uint32_t code);
 
 #endif  /* MAX5717_H */
 
