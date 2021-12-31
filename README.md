@@ -3,6 +3,8 @@ C library for MAX5717 / MAX5719 16 and 20 bit DAC (for STM32 HAL)
 
 This library is made for the STM32 HAL (Hardware Abstraction Library) platform. The example code is for STM32CubeMX and Keil uVision 5 IDE.
 
+> **MAX5717/19 Datasheet [maximintegrated.com](https://datasheets.maximintegrated.com/en/ds/MAX5717-MAX5719.pdf)**
+
 ---
 
 ### Usage
@@ -64,15 +66,9 @@ Please note that the code was tested for MAX5719 but not for MAX5717.
 
 ---
 
-### Sources
-
-MAX5717/19 Datasheet [maximintegrated.com](https://datasheets.maximintegrated.com/en/ds/MAX5717-MAX5719.pdf)
-
----
-
 ### License
 
-(tbd)
+Apache 2.0
 
-Copyright (c) 2020 eta Systems GmbH
+Copyright (c) 2022 eta Systems GmbH
 
